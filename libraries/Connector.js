@@ -1,12 +1,9 @@
+var elasticsearch=require('elasticsearch');
 var _config = require('../config/config');
-var mongoose = require('mongoose');  
-mongoose.connect(_config.mongodb.mongo_uri);
-var conn = mongoose.connection;             
- 
-conn.on('error', console.error.bind(console, 'connection error:'));  
- 
-conn.once('open', function() {
-    console.log("Connected ")
-  // Wait for the database connection to establish, then start the app.                         
+
+var client = new elasticsearch.Client( {
+  // host: '127.0.0.1:9200',
+  // log: 'trace'
+  host: 'http://'+_config.elasticsearch.username+':'+_config.elasticsearch.password+'@'+_config.elasticsearch.host+':'+_config.elasticsearch.port+'/',
 });
-module.exports = conn;
+module.exports = client;

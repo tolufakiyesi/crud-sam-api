@@ -1,15 +1,16 @@
 console.log('Loading function');
 var util = require('./libraries/utility')
+var querystring = require('querystring');
 
 exports.handler = (event, context, callback) => {
     context.callbackWaitsForEmptyEventLoop = false;
     var id =  (event.pathParameters || {}).productid || false;
     console.log('ID ', event.httpMethod)
-    var productModel = require('./model/ProductModel');
+    var elastic = require('./libraries/Elasticclient')
     switch(event.httpMethod){
         case "GET":
             if(id) {
-                productModel.findOne({"_id": id}, function(resp){
+                elastic._get({condition:{"_id": id}}, function(resp){
                     if(resp){
                         callback(null, {headers: {"content-type": "application/json"}, body: JSON.stringify(util.handleResponse({err: false, message:"Product with ID found successfully", data: resp}))});
                     }else{
@@ -17,10 +18,11 @@ exports.handler = (event, context, callback) => {
                     }
                     return;
                 });
+            }else{
+                elastic._get_all(function(products){
+                    return callback(null, {headers: {"content-type": "application/json"}, body: JSON.stringify(util.handleResponse({err: false, message:"Products found successfully", data: products}))});
+                });
             }
-            productModel.findAll({conditions:{}}, function(products){
-                return callback(null, {headers: {"content-type": "application/json"}, body: JSON.stringify(util.handleResponse({err: false, message:"Products found successfully", data: products}))});
-            });
             break;
 
         case "POST":
@@ -28,28 +30,32 @@ exports.handler = (event, context, callback) => {
             if(errors){
                 callback(null, {headers: {"content-type": "application/json"}, body: JSON.stringify(util.handleResponse({err: true, message: "Invalid Parameters", data: errors}))})
             }else{
-                productModel.save(JSON.parse(event.body), function(state){
+                var data = JSON.parse(event.body);
+                var date = new Date
+                data.date_added = date.toISOString()
+                elastic._save(data, function(state){
                     if(state){
-                        callback(null, {headers: {"content-type": "application/json"}, body: JSON.stringify(util.handleResponse({err: false, message:"Product has been saved successfully", data: null}))}); 
+                        callback(null, {headers: {"content-type": "application/json"}, body: JSON.stringify(util.handleResponse({err: false, message:"Product has been saved successfully", data: state}))}); 
                     }
                 })
             }            
             break;
 
-        case "PUT":  
-            productModel.update(JSON.parse(event.body),{"_id": id}, function(state){
+        case "PUT":
+            elastic._update(JSON.parse(event.body), id, function(state){
                 if(state){
-                    callback(null, {headers: {"content-type": "application/json"}, body: JSON.stringify(util.handleResponse({err: false, message:"Product has been updated successfully", data: null}))}); 
+                    callback(null, {headers: {"content-type": "application/json"}, body: JSON.stringify(util.handleResponse({err: false, message:"Product has been updated successfully", data: state}))}); 
                 }
             })         
             break;
 
         case "DELETE": 
-            productModel.delete({"_id": id}, function(state){
+            elastic._delete({"id": id}, function(state){
                 if(state){
                     callback(null, {headers: {"content-type": "application/json"}, body: JSON.stringify(util.handleResponse({err: false, message:"Product has been deleted successfully", data: null}))}); 
                 }
             })
+
             break; 
 
         default:

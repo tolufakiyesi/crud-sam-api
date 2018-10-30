@@ -1,6 +1,6 @@
 # crud-sam-api
 
-A simple crud application using aws lamda
+A simple crud application using aws lamda with elasticsearch as it's database
 
 
 ## Requirements
@@ -8,6 +8,7 @@ A simple crud application using aws lamda
 * SAM CLI
 * [NodeJS 8.10+ installed](https://nodejs.org/en/download/)
 * [Docker installed](https://www.docker.com/community-edition)
+* [Elasticsearch](https://www.elastic.co/products/elasticsearch)
 
 ## Setup process
 
